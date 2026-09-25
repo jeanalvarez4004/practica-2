@@ -2,8 +2,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
+using System.Text.Json;
 using CreditosApp.Data;
 using CreditosApp.Models;
+using CreditosApp.Services;
 
 namespace CreditosApp.Controllers;
 
@@ -13,11 +16,13 @@ public class SolicitudesController : Controller
 {
     private readonly ApplicationDbContext _context;
     private readonly UserManager<IdentityUser> _users;
+    private readonly IDistributedCache _cache;
 
-    public SolicitudesController(ApplicationDbContext context, UserManager<IdentityUser> users)
+    public SolicitudesController(ApplicationDbContext context, UserManager<IdentityUser> users, IDistributedCache cache)
     {
         _context = context;
         _users = users;
+        _cache = cache;
     }
 
     private string UsuarioId => _users.GetUserId(User)!;
@@ -62,6 +67,31 @@ public class SolicitudesController : Controller
         ViewBag.Desde = desde?.ToString("yyyy-MM-dd");
         ViewBag.Hasta = hasta?.ToString("yyyy-MM-dd");
 
+        // P4: sin filtros => lista cacheada 60s por usuario (Redis o memoria).
+        var sinFiltros = !estado.HasValue && !montoMin.HasValue && !montoMax.HasValue && !desde.HasValue && !hasta.HasValue;
+        if (sinFiltros && ModelState.IsValid)
+        {
+            var key = CacheKeys.SolicitudesDe(UsuarioId);
+            var hit = await _cache.GetStringAsync(key);
+            if (hit is not null)
+            {
+                ViewBag.Cache = true;
+                return View(JsonSerializer.Deserialize<List<SolicitudDto>>(hit)!
+                    .Select(d => new SolicitudCredito
+                    {
+                        Id = d.Id,
+                        MontoSolicitado = d.Monto,
+                        FechaSolicitud = d.Fecha,
+                        Estado = d.Estado
+                    }).ToList());
+            }
+            var data = await q.OrderByDescending(s => s.FechaSolicitud).ToListAsync();
+            var dto = data.Select(s => new SolicitudDto(s.Id, s.MontoSolicitado, s.FechaSolicitud, s.Estado)).ToList();
+            await _cache.SetStringAsync(key, JsonSerializer.Serialize(dto),
+                new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(60) });
+            return View(data);
+        }
+
         return View(await q.OrderByDescending(s => s.FechaSolicitud).ToListAsync());
     }
 
@@ -72,6 +102,9 @@ public class SolicitudesController : Controller
             .Include(x => x.Cliente)
             .FirstOrDefaultAsync(x => x.Id == id && x.Cliente!.UsuarioId == UsuarioId);
         if (s is null) return NotFound();
+        // P4: sesion => ultima solicitud visitada (se muestra en el layout).
+        HttpContext.Session.SetInt32("UltimaSolicitudId", s.Id);
+        HttpContext.Session.SetString("UltimaSolicitudMonto", s.MontoSolicitado.ToString("N2"));
         return View(s);
     }
 
@@ -128,6 +161,8 @@ public class SolicitudesController : Controller
         {
             _context.Solicitudes.Add(solicitud);
             await _context.SaveChangesAsync();
+            // P4: invalida el listado cacheado del usuario.
+            await _cache.RemoveAsync(CacheKeys.SolicitudesDe(UsuarioId));
         }
         catch (DbUpdateException)
         {
