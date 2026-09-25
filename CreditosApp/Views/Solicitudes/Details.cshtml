@@ -16,11 +16,11 @@
     <dt class="col-sm-3">Fecha</dt>
     <dd class="col-sm-9">@Model.FechaSolicitud.ToLocalTime().ToString("f")</dd>
     <dt class="col-sm-3">Estado</dt>
-    <dd class="col-sm-9">@Model.Estado</dd>
+    <dd class="col-sm-9"><span data-estado-id="@Model.Id">@Model.Estado</span> <partial name="_Realtime" /></dd>
     @if (!string.IsNullOrEmpty(Model.MotivoRechazo))
     {
         <dt class="col-sm-3">Motivo de rechazo</dt>
-        <dd class="col-sm-9">@Model.MotivoRechazo</dd>
+        <dd class="col-sm-9"><span data-motivo-id="@Model.Id">@Model.MotivoRechazo</span></dd>
     }
 </dl>
 
