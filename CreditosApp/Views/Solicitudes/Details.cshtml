@@ -1,0 +1,22 @@
+@model CreditosApp.Models.SolicitudCredito
+@{
+    ViewData["Title"] = $"Solicitud #{Model.Id}";
+}
+
+<h1>Solicitud #@Model.Id</h1>
+
+<dl class="row">
+    <dt class="col-sm-3">Monto solicitado</dt>
+    <dd class="col-sm-9">S/ @Model.MontoSolicitado.ToString("N2")</dd>
+    <dt class="col-sm-3">Fecha</dt>
+    <dd class="col-sm-9">@Model.FechaSolicitud.ToLocalTime().ToString("f")</dd>
+    <dt class="col-sm-3">Estado</dt>
+    <dd class="col-sm-9">@Model.Estado</dd>
+    @if (!string.IsNullOrEmpty(Model.MotivoRechazo))
+    {
+        <dt class="col-sm-3">Motivo de rechazo</dt>
+        <dd class="col-sm-9">@Model.MotivoRechazo</dd>
+    }
+</dl>
+
+<a asp-action="Index" class="btn btn-secondary">Volver a mis solicitudes</a>
