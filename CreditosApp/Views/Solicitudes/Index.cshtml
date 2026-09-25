@@ -1,0 +1,67 @@
+@model IEnumerable<CreditosApp.Models.SolicitudCredito>
+@using CreditosApp.Models
+@{
+    ViewData["Title"] = "Mis solicitudes";
+}
+
+<h1>Mis solicitudes</h1>
+
+<form method="get" class="row g-3 mb-3">
+    <div class="col-md-2">
+        <label class="form-label">Estado</label>
+        <select name="estado" class="form-select">
+            <option value="">Todos</option>
+            @foreach (var e in Enum.GetValues<EstadoSolicitud>())
+            {
+                <option value="@e" selected="@(ViewBag.Estado?.ToString() == e.ToString())">@e</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Monto min</label>
+        <input name="montoMin" type="number" step="0.01" min="0" class="form-control" value="@ViewBag.MontoMin" />
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Monto max</label>
+        <input name="montoMax" type="number" step="0.01" min="0" class="form-control" value="@ViewBag.MontoMax" />
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Desde</label>
+        <input name="desde" type="date" class="form-control" value="@ViewBag.Desde" />
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Hasta</label>
+        <input name="hasta" type="date" class="form-control" value="@ViewBag.Hasta" />
+    </div>
+    <div class="col-md-2 d-flex align-items-end gap-2">
+        <button class="btn btn-primary" type="submit">Filtrar</button>
+        <a class="btn btn-secondary" asp-action="Index">Limpiar</a>
+    </div>
+</form>
+
+<div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">No tienes solicitudes con esos filtros. <a asp-action="Create">Registra una aquí</a>.</div>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr><th>#</th><th>Monto</th><th>Fecha</th><th>Estado</th><th></th></tr>
+        </thead>
+        <tbody>
+            @foreach (var s in Model)
+            {
+                <tr>
+                    <td>@s.Id</td>
+                    <td>S/ @s.MontoSolicitado.ToString("N2")</td>
+                    <td>@s.FechaSolicitud.ToLocalTime().ToString("g")</td>
+                    <td><span class="badge bg-@(s.Estado == EstadoSolicitud.Aprobado ? "success" : s.Estado == EstadoSolicitud.Rechazado ? "danger" : "warning")">@s.Estado</span></td>
+                    <td><a asp-action="Details" asp-route-id="@s.Id">Detalle</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
