@@ -9,6 +9,20 @@
 {
     <div class="alert alert-success">@exito</div>
 }
+@if (TempData["AvisoCola"] is string aviso)
+{
+    <div class="alert alert-warning">
+        @aviso
+        <form asp-action="ReenviarNotificacion" method="post" class="mt-2">
+            <input type="hidden" name="id" value="@Model.Id" />
+            <button class="btn btn-sm btn-warning" type="submit">Reenviar notificación</button>
+        </form>
+    </div>
+}
+@if (TempData["Error"] is string terror)
+{
+    <div class="alert alert-danger">@terror</div>
+}
 
 <dl class="row">
     <dt class="col-sm-3">Monto solicitado</dt>

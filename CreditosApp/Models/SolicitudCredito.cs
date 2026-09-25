@@ -21,4 +21,7 @@ public class SolicitudCredito
 
     [Display(Name = "Motivo de rechazo")]
     public string? MotivoRechazo { get; set; }
+
+    // P7: MessageId del evento SolicitudRegistrada (para reenvios con el mismo id).
+    public string? NotificacionMessageId { get; set; }
 }

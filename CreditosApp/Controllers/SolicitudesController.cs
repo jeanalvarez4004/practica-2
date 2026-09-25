@@ -17,12 +17,21 @@ public class SolicitudesController : Controller
     private readonly ApplicationDbContext _context;
     private readonly UserManager<IdentityUser> _users;
     private readonly IDistributedCache _cache;
+    private readonly NotificacionesPublisher _publisher;
+    private readonly ILogger<SolicitudesController> _log;
 
-    public SolicitudesController(ApplicationDbContext context, UserManager<IdentityUser> users, IDistributedCache cache)
+    public SolicitudesController(
+        ApplicationDbContext context,
+        UserManager<IdentityUser> users,
+        IDistributedCache cache,
+        NotificacionesPublisher publisher,
+        ILogger<SolicitudesController> log)
     {
         _context = context;
         _users = users;
         _cache = cache;
+        _publisher = publisher;
+        _log = log;
     }
 
     private string UsuarioId => _users.GetUserId(User)!;
@@ -163,7 +172,9 @@ public class SolicitudesController : Controller
             ClienteId = cliente.Id,
             MontoSolicitado = model.MontoSolicitado,
             FechaSolicitud = DateTime.UtcNow,
-            Estado = EstadoSolicitud.Pendiente
+            Estado = EstadoSolicitud.Pendiente,
+            // P7: un MessageId por solicitud para reenvios identicos.
+            NotificacionMessageId = Guid.NewGuid().ToString()
         };
         try
         {
@@ -182,6 +193,33 @@ public class SolicitudesController : Controller
         }
 
         TempData["Exito"] = $"Solicitud #{solicitud.Id} registrada con éxito. Está pendiente de evaluación.";
+        // P7: publica SOLO si la validacion y la persistencia salieron bien.
+        // Si el broker falla, la solicitud se conserva y se advierte.
+        var (ok, error) = await _publisher.PublishAsync(new SolicitudRegistradaEvent(
+            solicitud.NotificacionMessageId!, solicitud.Id, UsuarioId, DateTime.UtcNow));
+        if (!ok)
+        {
+            _log.LogWarning("Solicitud #{Id} guardada pero no encolada: {Error}", solicitud.Id, error);
+            TempData["AvisoCola"] = "Tu solicitud quedó guardada, pero la notificación no pudo encolarse. Puedes reenviarla desde el detalle.";
+        }
         return RedirectToAction(nameof(Details), new { id = solicitud.Id });
+    }
+
+    // P7: reenvio manual con el MISMO MessageId (documentado en README).
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ReenviarNotificacion(int id)
+    {
+        var s = await _context.Solicitudes
+            .FirstOrDefaultAsync(x => x.Id == id && x.Cliente!.UsuarioId == UsuarioId);
+        if (s is null) return NotFound();
+        s.NotificacionMessageId ??= Guid.NewGuid().ToString();
+        await _context.SaveChangesAsync();
+        var (ok, error) = await _publisher.PublishAsync(new SolicitudRegistradaEvent(
+            s.NotificacionMessageId, s.Id, UsuarioId, DateTime.UtcNow));
+        TempData[ok ? "Exito" : "Error"] = ok
+            ? "Notificación reencolada con el mismo MessageId."
+            : $"No se pudo encolar: {error}";
+        return RedirectToAction(nameof(Details), new { id });
     }
 }

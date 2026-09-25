@@ -1,0 +1,23 @@
+@model IEnumerable<CreditosApp.Models.Notificacion>
+@{
+    ViewData["Title"] = "Mis notificaciones";
+}
+
+<h1>Mis notificaciones</h1>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">Aún no tienes notificaciones. Aparecerán aquí cuando registres una solicitud y el consumidor la procese.</div>
+}
+else
+{
+    <div class="list-group">
+        @foreach (var n in Model)
+        {
+            <div class="list-group-item">
+                <p class="mb-1">@n.Texto</p>
+                <small class="text-muted">Solicitud #@n.SolicitudId · @n.FechaProcesamientoUtc.ToLocalTime().ToString("g")</small>
+            </div>
+        }
+    </div>
+}
