@@ -1,0 +1,22 @@
+@model CreditosApp.Models.SolicitudCredito
+@{
+    ViewData["Title"] = "Nueva solicitud";
+}
+
+<h1>Nueva solicitud de crédito</h1>
+<p class="text-muted">Tus ingresos: S/ @(((decimal)ViewBag.Ingresos).ToString("N2")) · Máximo permitido: S/ @(((decimal)ViewBag.Maximo).ToString("N2")) (10x).</p>
+
+<form asp-action="Create" method="post">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="mb-3">
+        <label asp-for="MontoSolicitado" class="form-label"></label>
+        <input asp-for="MontoSolicitado" class="form-control" type="number" step="0.01" min="0.01" />
+        <span asp-validation-for="MontoSolicitado" class="text-danger"></span>
+    </div>
+    <button type="submit" class="btn btn-primary">Registrar solicitud</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+</form>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}

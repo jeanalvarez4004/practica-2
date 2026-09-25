@@ -6,6 +6,17 @@
 
 <h1>Mis solicitudes</h1>
 
+@if (TempData["Exito"] is string exito)
+{
+    <div class="alert alert-success">@exito</div>
+}
+@if (TempData["Error"] is string terror)
+{
+    <div class="alert alert-danger">@terror</div>
+}
+
+<p><a asp-action="Create" class="btn btn-success">+ Nueva solicitud</a></p>
+
 <form method="get" class="row g-3 mb-3">
     <div class="col-md-2">
         <label class="form-label">Estado</label>
