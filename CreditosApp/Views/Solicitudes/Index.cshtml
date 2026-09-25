@@ -15,7 +15,11 @@
     <div class="alert alert-danger">@terror</div>
 }
 
-<p><a asp-action="Create" class="btn btn-success">+ Nueva solicitud</a></p>
+<p><a asp-action="Create" class="btn btn-success">+ Nueva solicitud</a>
+@if (ViewBag.Cache == true)
+{
+    <span class="badge bg-info ms-2">desde caché (60s)</span>
+}</p>
 
 <form method="get" class="row g-3 mb-3">
     <div class="col-md-2">
