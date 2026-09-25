@@ -1,0 +1,51 @@
+@* P6: realtime SignalR para Mis solicitudes y detalle. *@
+<span id="rt-estado" class="badge bg-secondary" title="Estado de la conexión en tiempo real">● conectando…</span>
+<div id="rt-aviso" class="alert alert-info mt-2 d-none"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
+<script>
+(function () {
+  const badge = document.getElementById('rt-estado');
+  const aviso = document.getElementById('rt-aviso');
+  function setEstado(txt, cls) { badge.textContent = '● ' + txt; badge.className = 'badge ' + cls; }
+  function mostrarAviso(msg) { aviso.textContent = msg; aviso.classList.remove('d-none'); }
+
+  function pintar(id, estado, motivo) {
+    document.querySelectorAll('[data-estado-id="' + id + '"]').forEach(el => {
+      el.textContent = estado;
+      el.className = el.className.replace(/bg-\w+/g, '').trim()
+        + (estado === 'Aprobado' ? ' bg-success' : estado === 'Rechazado' ? ' bg-danger' : ' bg-warning');
+    });
+    const m = document.querySelector('[data-motivo-id="' + id + '"]');
+    if (m && motivo) m.textContent = motivo;
+  }
+
+  async function resincronizar() {
+    const ids = [...new Set([...document.querySelectorAll('[data-estado-id]')].map(e => e.getAttribute('data-estado-id')))];
+    for (const id of ids) {
+      try {
+        const r = await fetch('/Solicitudes/EstadoJson/' + id, { headers: { 'Accept': 'application/json' } });
+        if (r.ok) { const d = await r.json(); pintar(d.solicitudId, d.estado, d.motivoRechazo); }
+      } catch { /* sin red: se reintentará */ }
+    }
+  }
+
+  const conn = new signalR.HubConnectionBuilder()
+    .withUrl('/hubs/solicitudes')
+    .withAutomaticReconnect()
+    .build();
+
+  conn.on('SolicitudEstadoActualizado', d => {
+    pintar(d.solicitudId, d.estado, d.motivoRechazo);
+    mostrarAviso('Tu solicitud #' + d.solicitudId + ' fue ' + d.estado.toLowerCase()
+      + (d.motivoRechazo ? '. Motivo: ' + d.motivoRechazo : ''));
+  });
+  conn.onreconnecting(() => setEstado('reconectando…', 'bg-warning'));
+  conn.onreconnected(() => { setEstado('en línea', 'bg-success'); resincronizar(); });
+  conn.onclose(() => setEstado('desconectado', 'bg-danger'));
+
+  conn.start()
+    .then(() => setEstado('en línea', 'bg-success'))
+    .catch(() => setEstado('sin conexión', 'bg-danger'));
+})();
+</script>

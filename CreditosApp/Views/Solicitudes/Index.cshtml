@@ -19,7 +19,8 @@
 @if (ViewBag.Cache == true)
 {
     <span class="badge bg-info ms-2">desde caché (60s)</span>
-}</p>
+}
+<partial name="_Realtime" /></p>
 
 <form method="get" class="row g-3 mb-3">
     <div class="col-md-2">
@@ -73,7 +74,7 @@ else
                     <td>@s.Id</td>
                     <td>S/ @s.MontoSolicitado.ToString("N2")</td>
                     <td>@s.FechaSolicitud.ToLocalTime().ToString("g")</td>
-                    <td><span class="badge bg-@(s.Estado == EstadoSolicitud.Aprobado ? "success" : s.Estado == EstadoSolicitud.Rechazado ? "danger" : "warning")">@s.Estado</span></td>
+                    <td><span data-estado-id="@s.Id" class="badge bg-@(s.Estado == EstadoSolicitud.Aprobado ? "success" : s.Estado == EstadoSolicitud.Rechazado ? "danger" : "warning")">@s.Estado</span></td>
                     <td><a asp-action="Details" asp-route-id="@s.Id">Detalle</a></td>
                 </tr>
             }

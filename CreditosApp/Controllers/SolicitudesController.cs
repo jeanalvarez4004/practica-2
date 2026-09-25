@@ -95,7 +95,15 @@ public class SolicitudesController : Controller
         return View(await q.OrderByDescending(s => s.FechaSolicitud).ToListAsync());
     }
 
-    // GET /Solicitudes/Details/5 (solo el propietario)
+    // GET /Solicitudes/EstadoJson/5 — estado vigente para resincronizar (P6).
+    [HttpGet]
+    public async Task<IActionResult> EstadoJson(int id)
+    {
+        var s = await _context.Solicitudes
+            .FirstOrDefaultAsync(x => x.Id == id && x.Cliente!.UsuarioId == UsuarioId);
+        if (s is null) return NotFound();
+        return Json(new { solicitudId = s.Id, estado = s.Estado.ToString(), motivoRechazo = s.MotivoRechazo });
+    }
     public async Task<IActionResult> Details(int id)
     {
         var s = await _context.Solicitudes

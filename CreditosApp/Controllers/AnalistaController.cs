@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using CreditosApp.Data;
+using CreditosApp.Hubs;
 using CreditosApp.Models;
 using CreditosApp.Services;
 
@@ -14,11 +16,13 @@ public class AnalistaController : Controller
 {
     private readonly ApplicationDbContext _context;
     private readonly IDistributedCache _cache;
+    private readonly IHubContext<SolicitudesHub> _hub;
 
-    public AnalistaController(ApplicationDbContext context, IDistributedCache cache)
+    public AnalistaController(ApplicationDbContext context, IDistributedCache cache, IHubContext<SolicitudesHub> hub)
     {
         _context = context;
         _cache = cache;
+        _hub = hub;
     }
 
     // GET /Analista — pendientes de todos los clientes
@@ -53,6 +57,8 @@ public class AnalistaController : Controller
         s.MotivoRechazo = null;
         await _context.SaveChangesAsync();
         await InvalidarCachePropietario(s);
+        // P6: primero BD + cache, despues evento solo al propietario.
+        await NotificarPropietario(s);
         TempData["Exito"] = $"Solicitud #{id} aprobada.";
         return RedirectToAction(nameof(Index));
     }
@@ -77,6 +83,8 @@ public class AnalistaController : Controller
         s.MotivoRechazo = motivo.Trim();
         await _context.SaveChangesAsync();
         await InvalidarCachePropietario(s);
+        // P6: primero BD + cache, despues evento solo al propietario.
+        await NotificarPropietario(s);
         TempData["Exito"] = $"Solicitud #{id} rechazada.";
         return RedirectToAction(nameof(Index));
     }
@@ -85,5 +93,17 @@ public class AnalistaController : Controller
     {
         if (s.Cliente?.UsuarioId is string uid)
             await _cache.RemoveAsync(CacheKeys.SolicitudesDe(uid));
+    }
+
+    // P6: evento dirigido al grupo del propietario (UserId del servidor).
+    private Task NotificarPropietario(SolicitudCredito s)
+    {
+        if (s.Cliente?.UsuarioId is not string uid) return Task.CompletedTask;
+        return _hub.Clients.Group(uid).SendAsync("SolicitudEstadoActualizado", new
+        {
+            solicitudId = s.Id,
+            estado = s.Estado.ToString(),
+            motivoRechazo = s.MotivoRechazo
+        });
     }
 }

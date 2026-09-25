@@ -14,6 +14,7 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.Requ
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
 builder.Services.AddControllersWithViews();
+builder.Services.AddSignalR();
 
 // P4: cache distribuida Redis (o memoria local si no hay ConnectionString) + sesion.
 var redisCs = builder.Configuration["Redis:ConnectionString"];
@@ -62,6 +63,8 @@ app.MapControllerRoute(
 
 app.MapRazorPages()
    .WithStaticAssets();
+
+app.MapHub<CreditosApp.Hubs.SolicitudesHub>("/hubs/solicitudes");
 
 await SeedData.InitializeAsync(app.Services);
 
