@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: practica-2-creditos
+    runtime: docker
+    plan: free
+    branch: main
+    healthCheckPath: /
+    # UNA sola instancia: el consumidor RabbitMQ corre como BackgroundService dentro del Web Service.
+    numInstances: 1
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ConnectionStrings__DefaultConnection
+        value: DataSource=app.db;Cache=Shared
+      - key: Redis__ConnectionString
+        sync: false
+      - key: RabbitMq__ConnectionString
+        sync: false
+      - key: RabbitMq__QueueName
+        value: solicitudes.notificaciones
+      - key: RabbitMq__ConsumerEnabled
+        value: true

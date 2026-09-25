@@ -1,0 +1,7 @@
+bin/
+obj/
+*.db-shm
+*.db-wal
+CreditosApp/app.db
+.git/
+.vs/
