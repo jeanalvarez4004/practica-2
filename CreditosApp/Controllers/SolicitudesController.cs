@@ -74,4 +74,71 @@ public class SolicitudesController : Controller
         if (s is null) return NotFound();
         return View(s);
     }
+
+    // GET /Solicitudes/Create
+    public async Task<IActionResult> Create()
+    {
+        var cliente = await _context.Clientes
+            .FirstOrDefaultAsync(c => c.UsuarioId == UsuarioId && c.Activo);
+        if (cliente is null)
+        {
+            TempData["Error"] = "No tienes un cliente activo asociado. Contacta al administrador.";
+            return RedirectToAction(nameof(Index));
+        }
+        ViewBag.Ingresos = cliente.IngresosMensuales;
+        ViewBag.Maximo = cliente.IngresosMensuales * 10;
+        return View(new SolicitudCredito());
+    }
+
+    // POST /Solicitudes/Create — P3: validaciones server-side
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Create(SolicitudCredito model)
+    {
+        var cliente = await _context.Clientes
+            .FirstOrDefaultAsync(c => c.UsuarioId == UsuarioId && c.Activo);
+        if (cliente is null)
+        {
+            ModelState.AddModelError(string.Empty, "No tienes un cliente activo asociado.");
+            return View(model);
+        }
+        if (model.MontoSolicitado <= 0)
+            ModelState.AddModelError(nameof(model.MontoSolicitado), "El monto debe ser mayor a 0.");
+        if (model.MontoSolicitado > cliente.IngresosMensuales * 10)
+            ModelState.AddModelError(nameof(model.MontoSolicitado),
+                $"El monto no puede superar 10 veces tus ingresos (máx. S/ {(cliente.IngresosMensuales * 10):N2}).");
+        if (await _context.Solicitudes.AnyAsync(s => s.ClienteId == cliente.Id && s.Estado == EstadoSolicitud.Pendiente))
+            ModelState.AddModelError(string.Empty, "Ya tienes una solicitud pendiente. Espera su evaluación.");
+
+        if (!ModelState.IsValid)
+        {
+            ViewBag.Ingresos = cliente.IngresosMensuales;
+            ViewBag.Maximo = cliente.IngresosMensuales * 10;
+            return View(model);
+        }
+
+        var solicitud = new SolicitudCredito
+        {
+            ClienteId = cliente.Id,
+            MontoSolicitado = model.MontoSolicitado,
+            FechaSolicitud = DateTime.UtcNow,
+            Estado = EstadoSolicitud.Pendiente
+        };
+        try
+        {
+            _context.Solicitudes.Add(solicitud);
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            // Carrera contra el indice unico: ya existe una pendiente.
+            ModelState.AddModelError(string.Empty, "Ya tienes una solicitud pendiente. Espera su evaluación.");
+            ViewBag.Ingresos = cliente.IngresosMensuales;
+            ViewBag.Maximo = cliente.IngresosMensuales * 10;
+            return View(model);
+        }
+
+        TempData["Exito"] = $"Solicitud #{solicitud.Id} registrada con éxito. Está pendiente de evaluación.";
+        return RedirectToAction(nameof(Details), new { id = solicitud.Id });
+    }
 }

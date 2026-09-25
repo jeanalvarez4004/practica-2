@@ -5,6 +5,11 @@
 
 <h1>Solicitud #@Model.Id</h1>
 
+@if (TempData["Exito"] is string exito)
+{
+    <div class="alert alert-success">@exito</div>
+}
+
 <dl class="row">
     <dt class="col-sm-3">Monto solicitado</dt>
     <dd class="col-sm-9">S/ @Model.MontoSolicitado.ToString("N2")</dd>
