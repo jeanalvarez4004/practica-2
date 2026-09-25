@@ -1,0 +1,51 @@
+@model IEnumerable<CreditosApp.Models.SolicitudCredito>
+@{
+    ViewData["Title"] = "Panel del analista";
+}
+
+<h1>Panel del analista — pendientes</h1>
+
+@if (TempData["Exito"] is string exito)
+{
+    <div class="alert alert-success">@exito</div>
+}
+@if (TempData["Error"] is string terror)
+{
+    <div class="alert alert-danger">@terror</div>
+}
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">No hay solicitudes pendientes.</div>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr><th>#</th><th>Cliente</th><th>Ingresos</th><th>Monto</th><th>Fecha</th><th>Acciones</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var s in Model)
+            {
+                <tr>
+                    <td>@s.Id</td>
+                    <td>#@s.ClienteId</td>
+                    <td>S/ @(s.Cliente?.IngresosMensuales.ToString("N2"))</td>
+                    <td>S/ @s.MontoSolicitado.ToString("N2")</td>
+                    <td>@s.FechaSolicitud.ToLocalTime().ToString("g")</td>
+                    <td class="d-flex gap-2">
+                        <form asp-action="Aprobar" method="post" class="d-inline">
+                            <input type="hidden" name="id" value="@s.Id" />
+                            <button class="btn btn-sm btn-success" type="submit">Aprobar</button>
+                        </form>
+                        <form asp-action="Rechazar" method="post" class="d-inline d-flex gap-1">
+                            <input type="hidden" name="id" value="@s.Id" />
+                            <input name="motivo" class="form-control form-control-sm" placeholder="Motivo (obligatorio)" style="width:180px" />
+                            <button class="btn btn-sm btn-danger" type="submit">Rechazar</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
