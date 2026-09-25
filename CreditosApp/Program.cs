@@ -16,6 +16,12 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.Requ
 builder.Services.AddControllersWithViews();
 builder.Services.AddSignalR();
 
+// P7: Cloud MQ. Opciones por env RabbitMq__*. Publisher + consumidor en background.
+builder.Services.Configure<CreditosApp.Services.RabbitMqOptions>(
+    builder.Configuration.GetSection(CreditosApp.Services.RabbitMqOptions.Section));
+builder.Services.AddSingleton<CreditosApp.Services.NotificacionesPublisher>();
+builder.Services.AddHostedService<CreditosApp.Services.NotificacionesConsumer>();
+
 // P4: cache distribuida Redis (o memoria local si no hay ConnectionString) + sesion.
 var redisCs = builder.Configuration["Redis:ConnectionString"];
 if (!string.IsNullOrWhiteSpace(redisCs))

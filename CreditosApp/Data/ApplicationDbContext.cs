@@ -8,6 +8,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 {
     public DbSet<Cliente> Clientes => Set<Cliente>();
     public DbSet<SolicitudCredito> Solicitudes => Set<SolicitudCredito>();
+    public DbSet<Notificacion> Notificaciones => Set<Notificacion>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -33,6 +34,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .WithMany(c => c.Solicitudes)
                 .HasForeignKey(s => s.ClienteId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // P7: unicidad de MessageId => redelivery no duplica.
+        builder.Entity<Notificacion>(e =>
+        {
+            e.HasIndex(n => n.MessageId).IsUnique();
         });
     }
 }
