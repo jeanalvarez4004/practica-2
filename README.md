@@ -4,7 +4,7 @@ Sistema interno para gestionar solicitudes de crédito: usuarios autenticados re
 analistas de riesgo las aprueban/rechazan con reglas de negocio, notificaciones en tiempo real (SignalR)
 y mensajería asíncrona (RabbitMQ/CloudAMQP). Desplegado en Render como Web Service (Docker).
 
-- **URL Render:** _(pegar aquí la URL del Web Service, ej. `https://practica-2-creditos.onrender.com`)_
+- **URL Render:** `https://practica-2-97ng.onrender.com`
 - **Stack:** .NET 10, ASP.NET Core MVC, Identity, EF Core + SQLite, Session/Cache Redis,
   SignalR, RabbitMQ.Client 7.x, Docker.
 
